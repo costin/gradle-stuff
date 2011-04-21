@@ -16,8 +16,6 @@ class ScpUpload extends Tar {
     @Input
     String host
 
-    def scripts = [ "cd $remoteDir && tar -xjf $archiveName", "rm $remoteDir/$archiveName" ]
-
     ScpUpload() {
         compression = Compression.BZIP2
         if (project.configurations.findByName('antjsch') == null) {
@@ -44,21 +42,29 @@ class ScpUpload extends Tar {
         String password = login.password
         String key = login.key
         String host = login.host
+
+        // copy the archive, unpack it, then delete it
+        def unpackCommand = "cd $remoteDir && tar -xjf $archiveName"
+        def delCommand = "rm $remoteDir/$archiveName"
         
+        commands = [ unpackCommand, delCommand]
+
         project.ant {
             if (key != null) {
                scp(file: archivePath, todir: "$username@$host:$remoteDir", keyfile: key)
+               logger.info("Uploaded $archivePath")
                
-               for (s in scripts) {
-                  sshexec(host: host, username: username, keyfile: key, command: s)
+               for (c in commands) {
+                  sshexec(host: host, username: username, keyfile: key, command: c)
                }
             }
             
             else {
                scp(file: archivePath, todir: "$username@$host:$remoteDir", password: password)
+               logger.info("Uploaded $archivePath")
                
-               for (s in scripts) {
-                  sshexec(host: host, username: username, password: password, command: s)
+               for (c in commands) {
+                  sshexec(host: host, username: username, password: password, command: c)
                }
             }
         }
