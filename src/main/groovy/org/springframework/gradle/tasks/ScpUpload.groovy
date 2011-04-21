@@ -16,6 +16,8 @@ class ScpUpload extends Tar {
     @Input
     String host
 
+    def scripts = [ "cd $remoteDir && tar -xjf $archiveName", "rm $remoteDir/$archiveName" ]
+
     ScpUpload() {
         compression = Compression.BZIP2
         if (project.configurations.findByName('antjsch') == null) {
@@ -40,11 +42,25 @@ class ScpUpload extends Tar {
     def upload() {
         String username = login.username
         String password = login.password
+        String key = login.key
         String host = login.host
+        
         project.ant {
-            scp(file: archivePath, todir: "$username@$host:$remoteDir", password: password)
-            sshexec(host: host, username: username, password: password, command: "cd $remoteDir && tar -xjf $archiveName")
-            sshexec(host: host, username: username, password: password, command: "rm $remoteDir/$archiveName")
+            if (key != null) {
+               scp(file: archivePath, todir: "$username@$host:$remoteDir", keyfile: key)
+               
+               for (s in scripts) {
+                  sshexec(host: host, username: username, keyfile: key, command: s)
+               }
+            }
+            
+            else {
+               scp(file: archivePath, todir: "$username@$host:$remoteDir", password: password)
+               
+               for (s in scripts) {
+                  sshexec(host: host, username: username, password: password, command: s)
+               }
+            }
         }
     }
 
@@ -61,17 +77,32 @@ class ScpUpload extends Tar {
 class Login extends DefaultTask {
     @Input
     String host
+    @Input
+    @Optional
+    String key
+    
+    @Input
     String username
+
+    @Input
+    @Optional
     String password
 
     @TaskAction
     login() {
-        def console = System.console()
-        if (console) {
-            username = console.readLine("\nPlease enter the ssh username for host '$host': ")
-            password = new String(console.readPassword("Please enter the ssh password for '$host': "))
-        } else {
-            logger.error "Unable to access System.console()."
+        if (key == null || username == null) {
+          def console = System.console()
+          if (console) {
+              if (username == null) {
+                username = console.readLine("\nPlease enter the ssh username for host '$host': ")
+                
+              }
+              if (key == null) {
+                password = new String(console.readPassword("Please enter the ssh password for '$host': "))
+              }
+          } else {
+              logger.error "Unable to access System.console()."
+          }
         }
     }
 }
