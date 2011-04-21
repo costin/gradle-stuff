@@ -73,7 +73,7 @@ public class Bundlor extends DefaultTask {
     @TaskAction
     void createManifest() {
         logging.captureStandardOutput(LogLevel.INFO)
-
+        
         project.mkdir(bundlorDir)
 
         String inputPath = project.sourceSets.main.classesDir
@@ -82,12 +82,17 @@ public class Bundlor extends DefaultTask {
         ManifestWriter manifestWriter = new StandardManifestWriterFactory().create(inputPath, bundlorDir.absolutePath);
         ManifestContents mfTemplate = BundleManifestUtils.getManifest(manifestTemplate);
 
-        if (useProjectProps) {
-            p.putAll(project.properties)
-        }
-        
         // Must be a better way of doing this...
         Properties p = new Properties()
+
+        if (useProjectProps) {
+            for ( e in project.properties ) {
+                if (e.key != null && e.value != null)
+                    p.setProperty(e.key, e.value.toString())
+            }
+
+        }
+
         expansions.each {entry ->
             p.setProperty(entry.key, entry.value as String)
         }
