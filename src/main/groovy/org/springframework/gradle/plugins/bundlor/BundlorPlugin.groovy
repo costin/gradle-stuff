@@ -59,6 +59,9 @@ public class Bundlor extends DefaultTask {
 
     @Input
     boolean failOnWarnings = false
+    
+    @Input
+    boolean useProjectProps = false
 
     Bundlor() {
         manifestTemplate = new File(project.projectDir, 'template.mf')
@@ -79,6 +82,10 @@ public class Bundlor extends DefaultTask {
         ManifestWriter manifestWriter = new StandardManifestWriterFactory().create(inputPath, bundlorDir.absolutePath);
         ManifestContents mfTemplate = BundleManifestUtils.getManifest(manifestTemplate);
 
+        if (useProjectProps) {
+            p.putAll(project.properties)
+        }
+        
         // Must be a better way of doing this...
         Properties p = new Properties()
         expansions.each {entry ->
