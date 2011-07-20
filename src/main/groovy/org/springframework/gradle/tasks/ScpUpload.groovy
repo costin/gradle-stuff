@@ -44,7 +44,7 @@ class ScpUpload extends Tar {
         String host = login.host
 
         // copy the archive, unpack it, then delete it
-        def unpackCommand = "cd $remoteDir && tar -xjf $archiveName"
+        def unpackCommand = "mkdir -p $remoteDir && cd $remoteDir && tar -xjf $archiveName"
         def delCommand = "rm $remoteDir/$archiveName"
         
         commands = [ unpackCommand, delCommand]
